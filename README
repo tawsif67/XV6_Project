@@ -1,51 +1,72 @@
-# xv6 Lottery Scheduler
+<h1 align="center">xv6 Lottery Scheduler</h1>
 
-Submission-ready xv6-riscv implementation of a lottery scheduler for CSE 321
-Lab Assignment 2.
+<p align="center">
+  A clean xv6-riscv implementation of lottery scheduling for CSE 321 Lab Assignment 2.
+</p>
 
-This project replaces xv6's default round-robin scheduler with lottery
-scheduling. Runnable processes receive CPU time probabilistically according to
-their ticket counts, and each process tracks how many scheduling rounds it has
-received.
+<p align="center">
+  <b>Tickets</b> control CPU share.
+  <b>Rounds</b> show scheduler selections.
+  <b>settickets</b> lets user programs change priority.
+</p>
 
-## Assignment Coverage
+---
 
-| Requirement | Status |
-| --- | --- |
-| Add `tickets` and `rounds` to `struct proc` | Complete |
-| Initialize tickets and rounds for new processes | Complete |
-| Give `init` 10 tickets | Complete |
-| Inherit tickets across `fork()` | Complete |
-| Add `settickets(int n)` syscall | Complete |
-| Use the specified pseudorandom generator | Complete |
-| Replace round-robin with lottery scheduling | Complete |
-| Increment `rounds` on each scheduler selection | Complete |
-| Print rounds in `procdump()` / `Ctrl+P` | Complete |
-| Add `test_scheduler` user program | Complete |
+## Project Overview
 
-## Key Files
+This repository replaces xv6's default round-robin scheduler with a lottery
+scheduler. Each runnable process owns a number of tickets. At every scheduling
+decision, xv6 draws a winning ticket and runs the process that owns it.
 
-| File | Purpose |
-| --- | --- |
-| `kernel/proc.h` | Adds `tickets` and `rounds` to each process |
-| `kernel/proc.c` | Implements random generation, lottery scheduling, inheritance, and `procdump()` output |
-| `kernel/sysproc.c` | Implements `sys_settickets()` |
-| `kernel/syscall.h` | Adds the syscall number |
-| `kernel/syscall.c` | Registers the syscall handler |
-| `user/user.h` | Exposes `settickets(int)` to user programs |
-| `user/usys.pl` | Generates the user syscall stub |
-| `user/test_scheduler.c` | Test program for lottery proportions |
-| `SUBMISSION.md` | Exact file-by-file patch notes and full required code blocks |
+Processes with more tickets receive a larger share of CPU time over repeated
+scheduling rounds.
 
-## Run
+## What Was Implemented
 
-Build and boot xv6:
+<div>
+  <p><b>Process accounting</b><br>
+  Every process now stores its ticket count and the number of scheduler rounds it has received.</p>
+
+  <p><b>Ticket inheritance</b><br>
+  Forked children inherit their parent's ticket count and start with zero rounds.</p>
+
+  <p><b>New system call</b><br>
+  User programs can call <code>settickets(int n)</code> to set their own ticket count.</p>
+
+  <p><b>Lottery scheduler</b><br>
+  <code>scheduler()</code> calculates total runnable tickets, draws a pseudorandom winner, and runs the selected process.</p>
+
+  <p><b>Runtime visibility</b><br>
+  <code>procdump()</code> now prints each process's rounds, so <code>Ctrl+P</code> can be used to observe scheduler behavior.</p>
+
+  <p><b>User test program</b><br>
+  <code>test_scheduler</code> creates long-running processes with configurable ticket counts.</p>
+</div>
+
+## Main Files
+
+`kernel/proc.h` defines the new process fields.
+
+`kernel/proc.c` contains the random generator, lottery scheduler, ticket
+initialization, fork inheritance, round counting, and `procdump()` changes.
+
+`kernel/sysproc.c`, `kernel/syscall.c`, `kernel/syscall.h`, `user/user.h`, and
+`user/usys.pl` integrate the `settickets` system call.
+
+`user/test_scheduler.c` is the assignment test program.
+
+`SUBMISSION.md` contains the exact file-by-file modifications and full code
+blocks required for submission.
+
+## How To Test
+
+Boot xv6:
 
 ```sh
 make qemu
 ```
 
-Inside xv6, start test processes with different ticket counts:
+Run three test processes inside xv6:
 
 ```sh
 test_scheduler 10 &
@@ -53,24 +74,25 @@ test_scheduler 5 &
 test_scheduler 2 &
 ```
 
-Press `Ctrl+P` multiple times. The `rounds` values should grow roughly in
-proportion to the ticket ratio, for example `10:5:2`.
+Press `Ctrl+P` after the processes have run for a short time. The process
+rounds should grow approximately in the same ratio as their tickets: `10:5:2`.
 
-Expected output shape:
+## Expected Result
 
-```text
-1 sleep  init 32
-2 sleep  sh 18
-5 runble test_scheduler 110
-6 runble test_scheduler 55
-7 run   test_scheduler 22
-```
+The output from `Ctrl+P` should show `test_scheduler` processes accumulating
+different round counts. Exact values vary because lottery scheduling is
+probabilistic, but higher-ticket processes should receive more rounds over time.
 
-## Submission Notes
+## Submission Reference
 
-`SUBMISSION.md` contains the exact file modifications, insertion points,
-complete code blocks, test commands, expected behavior, and final checklist
-required for patch submission.
+For grading or patch review, open `SUBMISSION.md`. It includes:
+
+- exact modified files
+- exact insertion points
+- complete code blocks
+- test commands
+- expected behavior
+- final requirement checklist
 
 ## Upstream xv6 Notes
 
